@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Blade & Bloom</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09080a;
+    --surface: #111014;
+    --card: #161519;
+    --card2: #1c1b20;
+    --border: #262430;
+    --gold: #c9a84c;
+    --gold-light: #e5c97a;
+    --gold-dim: rgba(201,168,76,0.12);
+    --text: #ede9f5;
+    --muted: #6e697a;
+    --danger: #e05252;
+    --danger-dim: rgba(224,82,82,0.12);
+    --success: #52c97a;
+    --success-dim: rgba(82,201,122,0.12);
+    --warn: #e09b52;
+    --warn-dim: rgba(224,155,82,0.12);
+    --info: #5294e0;
+    --info-dim: rgba(82,148,224,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; height: 100vh; z-index: 50;
+  }
+  .sidebar-logo {
+    padding: 1.5rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; color: var(--text);
+    text-decoration: none; display: block;
+  }
+  .sidebar-logo span { color: var(--gold); }
+  .sidebar-label {
+    padding: 1.2rem 1.4rem .4rem;
+    font-size: .65rem; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-weight: 600;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .65rem 1.4rem; font-size: .88rem; color: var(--muted);
+    cursor: pointer; border-left: 3px solid transparent; transition: all .15s;
+    text-decoration: none;
+  }
+  .sidebar-item:hover { background: var(--card); color: var(--text); }
+  .sidebar-item.active { background: var(--gold-dim); color: var(--gold-light); border-left-color: var(--gold); }
+  .sidebar-item .icon { font-size: 1rem; }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-bottom {
+    padding: 1rem 1.4rem; border-top: 1px solid var(--border);
+    font-size: .78rem; color: var(--muted);
+  }
+  .sidebar-bottom a { color: var(--gold); text-decoration: none; }
+
+  /* ── MAIN ── */
+  .main { margin-left: 220px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 2rem; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 40;
+  }
+  .topbar-title { font-size: 1rem; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 1rem; }
+  .search-box {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); padding: .45rem .9rem;
+    border-radius: 8px; font-size: .85rem; outline: none; width: 220px;
+    transition: border-color .2s; font-family: 'DM Sans', sans-serif;
+  }
+  .search-box:focus { border-color: var(--gold); }
+  .search-box::placeholder { color: var(--muted); }
+  .admin-badge {
+    background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold); padding: .3rem .75rem; border-radius: 6px;
+    font-size: .78rem; font-weight: 600;
+  }
+
+  /* ── CONTENT ── */
+  .content { padding: 2rem; flex: 1; }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+  }
+  .stat-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
+  .stat-val { font-size: 2rem; font-weight: 700; font-family: 'Playfair Display', serif; }
+  .stat-val.gold { color: var(--gold); }
+  .stat-val.green { color: var(--success); }
+  .stat-val.orange { color: var(--warn); }
+  .stat-val.red { color: var(--danger); }
+  .stat-sub { font-size: .75rem; color: var(--muted); margin-top: .3rem; }
+
+  /* ── PANEL HEADER ── */
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.2rem;
+  }
+  .panel-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; }
+  .panel-actions { display: flex; gap: .6rem; align-items: center; }
+
+  /* ── FILTER TABS ── */
+  .filter-tabs { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .filter-tab {
+    padding: .4rem .9rem; border-radius: 20px; font-size: .8rem; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card); color: var(--muted);
+    transition: all .15s; user-select: none;
+  }
+  .filter-tab:hover { border-color: var(--gold); color: var(--gold); }
+  .filter-tab.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold-light); font-weight: 500; }
+
+  /* ── ADD BUTTON ── */
+  .btn-add {
+    background: linear-gradient(135deg, var(--gold), #9a7028);
+    color: #09080a; padding: .5rem 1.1rem; border-radius: 8px;
+    font-size: .85rem; font-weight: 600; border: none; cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn-add:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(201,168,76,0.3); }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--card2); padding: .85rem 1rem;
+    text-align: left; font-size: .75rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .08em; font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody td { padding: .85rem 1rem; font-size: .88rem; vertical-align: middle; }
+  .cell-name { font-weight: 500; }
+  .cell-phone { color: var(--muted); font-size: .82rem; }
+  .cell-service { font-size: .85rem; }
+  .cell-price { color: var(--gold); font-weight: 600; font-size: .85rem; }
+  .cell-barber { color: var(--muted); font-size: .82rem; }
+  .cell-datetime { font-size: .82rem; }
+
+  /* ── STATUS BADGE ── */
+  .badge {
+    display: inline-block; padding: .25rem .7rem; border-radius: 20px;
+    font-size: .75rem; font-weight: 600; letter-spacing: .04em;
+  }
+  .badge-pending  { background: var(--warn-dim);    color: var(--warn);    border: 1px solid rgba(224,155,82,.3); }
+  .badge-confirmed{ background: var(--success-dim); color: var(--success); border: 1px solid rgba(82,201,122,.3); }
+  .badge-cancelled{ background: var(--danger-dim);  color: var(--danger);  border: 1px solid rgba(224,82,82,.3); }
+
+  /* ── ACTION BUTTONS ── */
+  .action-row { display: flex; gap: .4rem; align-items: center; }
+  .btn-icon {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--card2); color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: .85rem;
+    transition: all .15s;
+  }
+  .btn-icon:hover { border-color: var(--gold); color: var(--gold-light); background: var(--gold-dim); }
+  .btn-icon.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-dim); }
+
+  /* ── STATUS SELECT ── */
+  .status-select {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text); padding: .3rem .6rem; border-radius: 6px;
+    font-size: .8rem; font-family: 'DM Sans', sans-serif; cursor: pointer;
+    outline: none;
+  }
+  .status-select:focus { border-color: var(--gold); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    padding: 3rem; text-align: center; color: var(--muted);
+  }
+  .empty-state .big { font-size: 2.5rem; margin-bottom: .5rem; }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 200; align-items: center; justify-content: center; padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
+    animation: slideUp .25s ease;
+  }
+  .modal-header {
+    padding: 1.4rem 1.6rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+  .modal-close {
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border);
+    background: none; color: var(--muted); cursor: pointer; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center; transition: all .15s;
+  }
+  .modal-close:hover { border-color: var(--danger); color: var(--danger); }
+  .modal-body { padding: 1.4rem 1.6rem; }
+  .modal-footer { padding: 1rem 1.6rem; border-top: 1px solid var(--border); display: flex; gap: .6rem; justify-content: flex-end; }
+
+  /* ── FORM ELEMENTS (MODAL) ── */
+  .m-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .m-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
+  .m-label { font-size: .8rem; color: var(--muted); font-weight: 500; }
+  .m-input, .m-select {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    padding: .65rem .9rem; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+    font-size: .88rem; outline: none; transition: border-color .2s; width: 100%;
+  }
+  .m-input:focus, .m-select:focus { border-color: var(--gold); }
+  .m-select option { background: var(--card); }
+
+  /* ── MODAL BUTTONS ── */
+  .btn-save {
+    background: linear-gradient(135deg, var(--gold), #9a7028);
+    color: #09080a; padding: .6rem 1.4rem; border-radius: 8px;
+    font-weight: 600; font-size: .9rem; border: none; cursor: pointer;
+    transition: transform .15s;
+  }
+  .btn-save:hover { transform: translateY(-1px); }
+  .btn-cancel-modal {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: .6rem 1.2rem; border-radius: 8px; font-size: .9rem; cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .btn-cancel-modal:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── CONFIRM DELETE ── */
+  .confirm-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75);
+    z-index: 300; align-items: center; justify-content: center; padding: 1rem;
+    backdrop-filter: blur(4px);
+  }
+  .confirm-modal.open { display: flex; }
+  .confirm-box {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 2rem; max-width: 380px; text-align: center; animation: slideUp .25s ease;
+  }
+  .confirm-icon { font-size: 2.5rem; margin-bottom: .8rem; }
+  .confirm-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: .5rem; }
+  .confirm-sub { color: var(--muted); font-size: .88rem; margin-bottom: 1.4rem; }
+  .btn-confirm-del {
+    background: var(--danger); color: #fff; padding: .6rem 1.4rem;
+    border-radius: 8px; border: none; font-size: .9rem; font-weight: 600; cursor: pointer;
+    margin-right: .5rem; transition: opacity .15s;
+  }
+  .btn-confirm-del:hover { opacity: .85; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--card2); border: 1px solid var(--border);
+    padding: .8rem 1.4rem; border-radius: 10px; font-size: .88rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4); display: none;
+    animation: fadeIn .2s ease;
+  }
+  #toast.show { display: block; }
+  #toast.success { border-color: var(--success); color: var(--success); }
+  #toast.error   { border-color: var(--danger); color: var(--danger); }
+
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .m-row { grid-template-columns: 1fr; }
+    .topbar { padding: 0 1rem; }
+    .content { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <a href="booking.html" class="sidebar-logo">Blade &amp; <span>Bloom</span></a>
+  <div class="sidebar-label">Management</div>
+  <a class="sidebar-item active" onclick="showView('bookings')"><span class="icon">📋</span> All Bookings</a>
+  <a class="sidebar-item" onclick="showView('bookings'); setFilter('Pending')"><span class="icon">⏳</span> Pending</a>
+  <a class="sidebar-item" onclick="showView('bookings'); setFilter('Confirmed')"><span class="icon">✅</span> Confirmed</a>
+  <a class="sidebar-item" onclick="showView('bookings'); setFilter('Cancelled')"><span class="icon">❌</span> Cancelled</a>
+  <div class="sidebar-spacer"></div>
+  <div class="sidebar-bottom">
+    <a href="booking.html">← Back to Site</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">⚙ Admin Dashboard</div>
+    <div class="topbar-right">
+      <input class="search-box" type="text" id="searchBox" placeholder="🔍  Search by name, phone, service…" oninput="renderTable()">
+      <span class="admin-badge">Admin</span>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- STATS -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-label">Total Bookings</div>
+        <div class="stat-val gold" id="stTotal">0</div>
+        <div class="stat-sub">All time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-val orange" id="stPending">0</div>
+        <div class="stat-sub">Awaiting confirmation</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Confirmed</div>
+        <div class="stat-val green" id="stConfirmed">0</div>
+        <div class="stat-sub">Ready to serve</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cancelled</div>
+        <div class="stat-val red" id="stCancelled">0</div>
+        <div class="stat-sub">Cancelled appointments</div>
+      </div>
+    </div>
+
+    <!-- PANEL -->
+    <div class="panel-header">
+      <div class="panel-title">Appointment Records</div>
+      <div class="panel-actions">
+        <div class="filter-tabs" id="filterTabs">
+          <div class="filter-tab active" onclick="setFilter('All')">All</div>
+          <div class="filter-tab" onclick="setFilter('Pending')">Pending</div>
+          <div class="filter-tab" onclick="setFilter('Confirmed')">Confirmed</div>
+          <div class="filter-tab" onclick="setFilter('Cancelled')">Cancelled</div>
+        </div>
+        <button class="btn-add" onclick="openAddModal()">+ Add Booking</button>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Service</th>
+            <th>Stylist</th>
+            <th>Date &amp; Time</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="bookingTable"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="big">📭</div>
+        <div>No bookings found</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add Booking</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="m-row">
+        <div class="m-group">
+          <label class="m-label">Full Name *</label>
+          <input class="m-input" type="text" id="mName" placeholder="Client name">
+        </div>
+        <div class="m-group">
+          <label class="m-label">Phone *</label>
+          <input class="m-input" type="tel" id="mPhone" placeholder="+91 XXXXX XXXXX">
+        </div>
+      </div>
+      <div class="m-group">
+        <label class="m-label">Email</label>
+        <input class="m-input" type="email" id="mEmail" placeholder="client@email.com">
+      </div>
+      <div class="m-row">
+        <div class="m-group">
+          <label class="m-label">Service *</label>
+          <select class="m-select" id="mService" onchange="updateServicePrice()">
+            <option value="">— Select Service —</option>
+            <option value="Classic Haircut|₹350|30 min">Classic Haircut — ₹350</option>
+            <option value="Fade & Taper|₹450|40 min">Fade &amp; Taper — ₹450</option>
+            <option value="Beard Shaping|₹250|20 min">Beard Shaping — ₹250</option>
+            <option value="Hair + Beard Combo|₹600|60 min">Hair + Beard Combo — ₹600</option>
+            <option value="Color & Highlights|₹1200|90 min">Color &amp; Highlights — ₹1200</option>
+            <option value="Kids Cut|₹200|20 min">Kids Cut — ₹200</option>
+          </select>
+        </div>
+        <div class="m-group">
+          <label class="m-label">Stylist *</label>
+          <select class="m-select" id="mBarber">
+            <option value="Any Available">Any Available</option>
+            <option value="Rahul">Rahul</option>
+            <option value="Arjun">Arjun</option>
+            <option value="Vikram">Vikram</option>
+            <option value="Siddharth">Siddharth</option>
+          </select>
+        </div>
+      </div>
+      <div class="m-row">
+        <div class="m-group">
+          <label class="m-label">Date *</label>
+          <input class="m-input" type="date" id="mDate">
+        </div>
+        <div class="m-group">
+          <label class="m-label">Time *</label>
+          <select class="m-select" id="mTime">
+            <option value="">— Pick Time —</option>
+            <option>9:00 AM</option><option>9:30 AM</option><option>10:00 AM</option>
+            <option>10:30 AM</option><option>11:00 AM</option><option>11:30 AM</option>
+            <option>12:00 PM</option><option>12:30 PM</option><option>2:00 PM</option>
+            <option>2:30 PM</option><option>3:00 PM</option><option>3:30 PM</option>
+            <option>4:00 PM</option><option>5:00 PM</option><option>6:00 PM</option>
+            <option>7:00 PM</option>
+          </select>
+        </div>
+      </div>
+      <div class="m-group">
+        <label class="m-label">Status</label>
+        <select class="m-select" id="mStatus">
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="m-group">
+        <label class="m-label">Notes</label>
+        <input class="m-input" type="text" id="mNotes" placeholder="Optional notes…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel-modal" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveBooking()">Save Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Delete Booking?</div>
+    <div class="confirm-sub">This action cannot be undone. The appointment will be permanently removed.</div>
+    <button class="btn-confirm-del" onclick="confirmDelete()">Yes, Delete</button>
+    <button class="btn-cancel-modal" onclick="closeConfirm()">Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── DATA ──
+let bookings = [];
+let activeFilter = 'All';
+let deleteTargetId = null;
+
+// ── SEED DATA (if empty) ──
+function seedData() {
+  const seeds = [
+    { _id:'s1', ref:'B&B-11001', name:'Aarav Shah', phone:'+91 98001 11111', email:'aarav@mail.com', service:'Classic Haircut', price:'₹350', duration:'30 min', barber:'Rahul', date:'2025-04-21', time:'10:00 AM', status:'Confirmed', createdAt:'20/04/2025', notes:'' },
+    { _id:'s2', ref:'B&B-11002', name:'Priya Mehta', phone:'+91 98002 22222', email:'priya@mail.com', service:'Color & Highlights', price:'₹1200', duration:'90 min', barber:'Arjun', date:'2025-04-21', time:'11:30 AM', status:'Pending', createdAt:'20/04/2025', notes:'Prefer subtle highlights' },
+    { _id:'s3', ref:'B&B-11003', name:'Rohan Kulkarni', phone:'+91 98003 33333', email:'', service:'Beard Shaping', price:'₹250', duration:'20 min', barber:'Vikram', date:'2025-04-22', time:'3:00 PM', status:'Confirmed', createdAt:'19/04/2025', notes:'' },
+    { _id:'s4', ref:'B&B-11004', name:'Sneha Joshi', phone:'+91 98004 44444', email:'sneha@mail.com', service:'Fade & Taper', price:'₹450', duration:'40 min', barber:'Siddharth', date:'2025-04-22', time:'5:00 PM', status:'Pending', createdAt:'19/04/2025', notes:'' },
+    { _id:'s5', ref:'B&B-11005', name:'Dev Patel', phone:'+91 98005 55555', email:'', service:'Hair + Beard Combo', price:'₹600', duration:'60 min', barber:'Rahul', date:'2025-04-20', time:'9:00 AM', status:'Cancelled', createdAt:'18/04/2025', notes:'Cancelled by client' },
+  ];
+  localStorage.setItem('bb_bookings', JSON.stringify(seeds));
+  return seeds;
+}
+
+function loadBookings() {
+  const raw = localStorage.getItem('bb_bookings');
+  if (!raw) { bookings = seedData(); }
+  else {
+    try { bookings = JSON.parse(raw); if (!bookings.length) bookings = seedData(); }
+    catch { bookings = seedData(); }
+  }
+}
+
+function saveToStorage() {
+  localStorage.setItem('bb_bookings', JSON.stringify(bookings));
+}
+
+// ── STATS ──
+function updateStats() {
+  document.getElementById('stTotal').textContent     = bookings.length;
+  document.getElementById('stPending').textContent   = bookings.filter(b => b.status === 'Pending').length;
+  document.getElementById('stConfirmed').textContent = bookings.filter(b => b.status === 'Confirmed').length;
+  document.getElementById('stCancelled').textContent = bookings.filter(b => b.status === 'Cancelled').length;
+}
+
+// ── FILTER ──
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent === f);
+  });
+  // Also highlight sidebar
+  renderTable();
+}
+
+// ── RENDER TABLE ──
+function renderTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  let filtered = bookings.filter(b => {
+    const matchFilter = activeFilter === 'All' || b.status === activeFilter;
+    const matchSearch = !q ||
+      b.name.toLowerCase().includes(q) ||
+      (b.phone || '').toLowerCase().includes(q) ||
+      (b.service || '').toLowerCase().includes(q) ||
+      (b.barber || '').toLowerCase().includes(q) ||
+      (b.ref || '').toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  // Sort newest first
+  filtered = filtered.slice().reverse();
+
+  const tbody = document.getElementById('bookingTable');
+  const empty = document.getElementById('emptyState');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(b => `
+    <tr>
+      <td>
+        <div class="cell-name">${esc(b.name)}</div>
+        <div class="cell-phone">${esc(b.phone)}${b.ref ? ' · <span style="color:var(--muted);font-size:.75rem;">' + esc(b.ref) + '</span>' : ''}</div>
+      </td>
+      <td>
+        <div class="cell-service">${esc(b.service)}</div>
+        <div style="font-size:.75rem;color:var(--muted);">${esc(b.duration||'')}</div>
+      </td>
+      <td class="cell-barber">${esc(b.barber)}</td>
+      <td class="cell-datetime">
+        <div>${esc(b.date)}</div>
+        <div style="color:var(--muted);font-size:.8rem;">${esc(b.time)}</div>
+      </td>
+      <td class="cell-price">${esc(b.price||'—')}</td>
+      <td>
+        <select class="status-select" onchange="quickStatus('${b._id}', this.value)">
+          <option value="Pending"   ${b.status==='Pending'   ?'selected':''}>⏳ Pending</option>
+          <option value="Confirmed" ${b.status==='Confirmed' ?'selected':''}>✅ Confirmed</option>
+          <option value="Cancelled" ${b.status==='Cancelled' ?'selected':''}>❌ Cancelled</option>
+        </select>
+      </td>
+      <td>
+        <div class="action-row">
+          <button class="btn-icon" onclick="openEditModal('${b._id}')" title="Edit">✏️</button>
+          <button class="btn-icon danger" onclick="askDelete('${b._id}')" title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  updateStats();
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── QUICK STATUS UPDATE ──
+function quickStatus(id, status) {
+  const b = bookings.find(x => x._id === id);
+  if (!b) return;
+  b.status = status;
+  saveToStorage();
+  renderTable();
+  showToast(`Status updated to ${status}`, 'success');
+}
+
+// ── OPEN ADD MODAL ──
+function openAddModal() {
+  document.getElementById('modalTitle').textContent = 'Add New Booking';
+  document.getElementById('editId').value = '';
+  clearModalForm();
+  // Set default date to today
+  document.getElementById('mDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+// ── OPEN EDIT MODAL ──
+function openEditModal(id) {
+  const b = bookings.find(x => x._id === id);
+  if (!b) return;
+  document.getElementById('modalTitle').textContent = 'Edit Booking';
+  document.getElementById('editId').value = id;
+  document.getElementById('mName').value   = b.name   || '';
+  document.getElementById('mPhone').value  = b.phone  || '';
+  document.getElementById('mEmail').value  = b.email  || '';
+  document.getElementById('mBarber').value = b.barber || 'Any Available';
+  document.getElementById('mTime').value   = b.time   || '';
+  document.getElementById('mStatus').value = b.status || 'Pending';
+  document.getElementById('mNotes').value  = b.notes  || '';
+
+  // Date: convert display format back to input format if needed
+  let dateVal = b.date || '';
+  if (dateVal && !dateVal.includes('-')) {
+    // Try to parse indian format: "Mon DD Mon"
+    const d = new Date(dateVal);
+    if (!isNaN(d)) dateVal = d.toISOString().split('T')[0];
+  }
+  document.getElementById('mDate').value = dateVal;
+
+  // Service select: match by name
+  const svcSel = document.getElementById('mService');
+  let matched = false;
+  for (const opt of svcSel.options) {
+    if (opt.value && opt.value.split('|')[0] === b.service) {
+      svcSel.value = opt.value;
+      matched = true; break;
+    }
+  }
+  if (!matched) svcSel.value = '';
+
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function clearModalForm() {
+  ['mName','mPhone','mEmail','mNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mService').value = '';
+  document.getElementById('mBarber').value  = 'Any Available';
+  document.getElementById('mTime').value    = '';
+  document.getElementById('mStatus').value  = 'Pending';
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+}
+
+// ── SAVE BOOKING (CREATE / UPDATE) ──
+function saveBooking() {
+  const name  = document.getElementById('mName').value.trim();
+  const phone = document.getElementById('mPhone').value.trim();
+  const svcRaw = document.getElementById('mService').value;
+  const barber = document.getElementById('mBarber').value;
+  const date   = document.getElementById('mDate').value;
+  const time   = document.getElementById('mTime').value;
+  const status = document.getElementById('mStatus').value;
+
+  if (!name)   { showToast('Name is required', 'error'); return; }
+  if (!phone)  { showToast('Phone is required', 'error'); return; }
+  if (!svcRaw) { showToast('Please select a service', 'error'); return; }
+  if (!date)   { showToast('Please pick a date', 'error'); return; }
+  if (!time)   { showToast('Please pick a time', 'error'); return; }
+
+  const [service, price, duration] = svcRaw.split('|');
+
+  const editId = document.getElementById('editId').value;
+
+  if (editId) {
+    // UPDATE
+    const b = bookings.find(x => x._id === editId);
+    if (!b) return;
+    Object.assign(b, {
+      name, phone,
+      email: document.getElementById('mEmail').value.trim(),
+      service, price, duration, barber, date, time, status,
+      notes: document.getElementById('mNotes').value.trim()
+    });
+    showToast('Booking updated ✓', 'success');
+  } else {
+    // CREATE
+    const newB = {
+      _id: Date.now().toString(),
+      ref: 'B&B-' + Math.floor(10000 + Math.random() * 90000),
+      name, phone,
+      email: document.getElementById('mEmail').value.trim(),
+      service, price, duration, barber, date, time, status,
+      notes: document.getElementById('mNotes').value.trim(),
+      createdAt: new Date().toLocaleDateString('en-IN')
+    };
+    bookings.push(newB);
+    showToast('Booking added ✓', 'success');
+  }
+
+  saveToStorage();
+  closeModal();
+  renderTable();
+}
+
+function updateServicePrice() {
+  // Auto-selects service value, nothing extra needed
+}
+
+// ── DELETE ──
+function askDelete(id) {
+  deleteTargetId = id;
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm() {
+  deleteTargetId = null;
+  document.getElementById('confirmModal').classList.remove('open');
+}
+function confirmDelete() {
+  if (!deleteTargetId) return;
+  bookings = bookings.filter(b => b._id !== deleteTargetId);
+  saveToStorage();
+  closeConfirm();
+  renderTable();
+  showToast('Booking deleted', 'error');
+  deleteTargetId = null;
+}
+
+// ── TOAST ──
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  t.className = `show ${type}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── CLOSE MODAL ON BACKDROP CLICK ──
+document.getElementById('modalBackdrop').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── INIT ──
+loadBookings();
+renderTable();
+</script>
+</body>
+</html>
